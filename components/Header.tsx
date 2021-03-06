@@ -2,7 +2,7 @@ import Link from "next/link";
 
 export const Header = () => {
   return (
-    <header className="bg-blue-800 text-white p-4">
+    <header className="bg-blue-800 text-white p-4 header">
       <div className="flex justify-between max-w-4xl mx-auto">
         <div className="space-x-4">
           <Link href="/" passHref>

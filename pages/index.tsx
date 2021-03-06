@@ -11,7 +11,7 @@ export default function Home(props: Props) {
   console.log({ props });
   return (
     <Layout>
-      <div className="max-w-4xl mx-auto space-y-4 pt-4">
+      <div className="max-w-4xl mx-auto space-y-4 py-6">
         <h1 className="text-4xl">Customers</h1>
         <table className="table-fixed w-full ">
           <thead className="border-t-2 border-gray-200">
