@@ -1,3 +1,4 @@
+import { Layout } from "../../components/Layout";
 import { Customer } from "../../types.app";
 
 interface Props {
@@ -5,7 +6,7 @@ interface Props {
 }
 
 export default function customer(props: Props) {
-  return <p>Customer: {props.customer.id}</p>;
+  return <Layout>Customer: {props.customer.id}</Layout>;
 }
 
 export async function getServerSideProps(context) {
