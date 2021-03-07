@@ -1,34 +1,35 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Customer.io Take Home Assignment
 
-## Getting Started
+## Running the app
 
-First, run the development server:
+To run the app follow these steps:
 
-```bash
-npm run dev
-# or
-yarn dev
+```
+$ yarn install
+$ yarn build
+$ yarn start
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Design Decisions
 
-You can start editing the page by modifying `pages/index.js`. The page auto-updates as you edit the file.
+### Unimplemented Features
 
-[API routes](https://nextjs.org/docs/api-routes/introduction) can be accessed on [http://localhost:3000/api/hello](http://localhost:3000/api/hello). This endpoint can be edited in `pages/api/hello.js`.
+There are some features which didn't make sense to include given the features sets to work on. For example, there was a logout button in the top right, probably based on some authentication. I chose to forgo that until given further guidance on such an addition.
 
-The `pages/api` directory is mapped to `/api/*`. Files in this directory are treated as [API routes](https://nextjs.org/docs/api-routes/introduction) instead of React pages.
+### UI/UX
 
-## Learn More
+I took some liberty to adjust designs slightly. I removed the `Home` and `Customer` links in the header since they are both the same and can be achieved by the user clicking on the `Customer.io` text which I think is common UX for the web.
 
-To learn more about Next.js, take a look at the following resources:
+In the list view I removed the `id` in the table as it adds no real functional value to the user. If the list view were to be updated to use search, they would probably search based on the user's name, email, or job, as opposed to their id. Another thing I did here was with CSS make the email lowercase or the name of the business capitalized. Just small things here and there to bring consistency to the UI.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Given my time constraints I did not add mobile responsiveness but would collaborate with design to implement as that is critical to UX on the web.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
+The colors I chose are just what I had to work with Tailwind. I understand I could have added new colors to the Tailwind config but for this homework just decided to go with what was available.
 
-## Deploy on Vercel
+I tested and created the UI/UX mainly based on the happy path and did not adjust according to errors whether from the network or the API. This also makes for bad UI/UX but would be something I would change going forward.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+A nice to have even for this app would have been some sort of notification/toast message whenever there was a success on a change. Currently the user has to double check their work in order for that to happen. Not ideal.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+### Code
+
+This is not meant to be a production build in the slightest. Variables like the API url is something that should be done at build time but is hard coded right now. There are no tests for my unit functions and as I stated above just the happy path is tested in the UI. I focused more on getting it working with some decent UI. This seems like the right focus given it is a prototype.

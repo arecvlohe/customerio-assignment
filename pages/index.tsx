@@ -64,6 +64,7 @@ export default function Home(props: Props) {
 }
 
 export async function getServerSideProps(_context) {
+  // Should handle the error
   const data = await fetch("http://localhost:3000/api/customers");
   const customers = await data.json();
 

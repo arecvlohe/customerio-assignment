@@ -151,6 +151,8 @@ export default function customer(props: Props) {
                         readOnly={!isEdit}
                       />
                       {isEdit && key !== "email" && (
+                        // Email can't be deleted on the API anyway so just
+                        // removing the delete button for it here
                         <button
                           type="button"
                           className="text-red-500"

@@ -13,6 +13,9 @@ const sortMap = {
 };
 
 export const sortAttrs = (a: [string, unknown], b: [string, unknown]) => {
+  // Attempting to give some sort of order to keys by having the
+  // email, first name, last name at the top and all other keys
+  // in any order below them
   const [keyA] = a;
   const [keyB] = b;
   const sortMapA = sortMap[keyA] ?? 0;
