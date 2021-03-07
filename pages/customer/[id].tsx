@@ -1,18 +1,20 @@
 import React from "react";
 import { useRouter } from "next/router";
 import { Layout } from "../../components/Layout";
-import { Customer } from "../../types.app";
-import * as dateFns from "date-fns";
+import { Customer } from "../../utils/types.app";
+import {
+  formatUnixTimeToLocale,
+  formValuesToObject,
+  patchCustomer,
+  sortAttrs,
+  wordsToLowerSnakeCase,
+} from "../../utils/helpers.app";
+import { TrashCan } from "../../components/TrashCan";
+import { Pencil } from "../../components/Pencil";
 
 interface Props {
   customer: Customer;
 }
-
-const sortMap = {
-  last_name: 1,
-  first_name: 2,
-  email: 3,
-};
 
 const typeMap = {
   email: "email",
@@ -25,184 +27,151 @@ export default function customer(props: Props) {
 
   const [attrs, setAttrs] = React.useState(props.customer.attributes);
 
+  const entriesArr = (attrs: { [key: string]: string }) => {
+    return Object.entries(attrs)
+      .filter(([key, _value]) => key !== "created_at")
+      .sort(sortAttrs);
+  };
+
   const isEdit = "edit" in router.query;
+
+  const handleDeleteAttr = (key: string) => (
+    e: React.MouseEvent<HTMLButtonElement, MouseEvent>
+  ) => {
+    const nextAttrs = attrs;
+    delete nextAttrs[key];
+
+    setAttrs({ ...nextAttrs });
+  };
+
+  const handleAddAttr = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const form = e.target;
+
+    // Use a type guard instead of casting
+    if (form instanceof HTMLFormElement) {
+      const data = new FormData(form);
+
+      const key = wordsToLowerSnakeCase(data.get("key"));
+      const value = data.get("value").toString();
+
+      const nextAttrs = {
+        ...attrs,
+        [key]: value,
+      };
+
+      setAttrs(nextAttrs);
+
+      form.reset();
+    } else {
+      // This is a no-op but unlikely that this will happen
+    }
+  };
+
+  const handleSaveChanges = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const form = e.target;
+
+    if (form instanceof HTMLFormElement) {
+      const data = new FormData(form);
+      const entries = formValuesToObject(data, props.customer.attributes);
+
+      try {
+        const resp = await patchCustomer(id, entries);
+
+        // Should inform the user of a success
+        if (resp.status === 200) {
+          router.push("/");
+        }
+      } catch (e) {
+        // Should inform the user of an error
+        console.error(e);
+      }
+    } else {
+      // This is a no-op but unlikely this will happen
+    }
+  };
+
+  const pushToEditView = () =>
+    router.push(`/customer/${props.customer.id}?edit`);
+
+  const pushToHomePage = () => router.push("/");
 
   return (
     <Layout>
-      <div className="max-w-4xl mx-auto space-y-4 py-6">
+      <div className="max-w-4xl py-6 mx-auto space-y-4">
         <section className="flex items-center justify-between">
           <div className="space-x-2">
-            <h1 className="text-4xl capitalize inline-block">
+            <h1 className="inline-block text-4xl capitalize">
               {props.customer.attributes.first_name}{" "}
               {props.customer.attributes.last_name}
             </h1>
-            <span className="lowercase text-gray-400">
+            <span className="text-gray-400 lowercase">
               {props.customer.attributes.email}
             </span>
             <div
-              className="text-gray-400 text-xs"
+              className="text-xs text-gray-400"
               style={{ marginLeft: 0, marginTop: 4 }}
             >
               Last Updated:{" "}
-              {dateFns.format(
-                dateFns.fromUnixTime(props.customer.last_updated),
-                "P p"
-              )}{" "}
+              {formatUnixTimeToLocale(props.customer.last_updated)}{" "}
             </div>
           </div>
           {!isEdit && (
             <button
               type="button"
               className="flex items-center space-x-2"
-              onClick={() => router.push(`/customer/${props.customer.id}?edit`)}
+              onClick={pushToEditView}
             >
               <span>Edit</span>
-              <svg
-                width={24}
-                height={24}
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                />
-              </svg>
+              <Pencil />
             </button>
           )}
         </section>
-        <div className="grid gap-4 grid-cols-2 grid-rows-1">
+        <div className="grid grid-cols-2 grid-rows-1 gap-4">
           <div className="space-y-2">
             <h2 className="text-2xl">Details</h2>
             <form
               id="save-changes"
               className="space-y-10"
-              onSubmit={async (e) => {
-                e.preventDefault();
-                const form = e.target as HTMLFormElement;
-                const data = new FormData(form);
-                const entries = [...data.entries()].reduce(
-                  (acc, [key, value]) => {
-                    return {
-                      ...acc,
-                      [key]: value,
-                    };
-                  },
-                  {}
-                );
-
-                const resp = await fetch(
-                  `http://localhost:1323/customers/${id}`,
-                  {
-                    method: "PATCH",
-                    headers: {
-                      "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({ customer: { attributes: entries } }),
-                  }
-                );
-
-                if (resp.status === 200) {
-                  router.push("/");
-                }
-              }}
+              onSubmit={handleSaveChanges}
             >
-              {Object.entries(attrs)
-                .filter(([key, _value]) => key !== "created_at")
-                .sort((a, b) => {
-                  const [keyA] = a;
-                  const [keyB] = b;
-                  const sortMapA = sortMap[keyA] ?? 0;
-                  const sortMapB = sortMap[keyB] ?? 0;
-
-                  if (sortMapA > sortMapB) return -1;
-                  if (sortMapA < sortMapB) return 1;
-                  if (sortMapA === sortMapB) return 0;
-                })
-                .map(([key, value]) => {
-                  return (
-                    <div key={key} className="space-y-2">
-                      <label className="uppercase text-xs text-gray-400 block">
-                        {key.split("_").join(" ")}
-                      </label>
-                      <span className="space-x-2">
-                        <input
-                          className="text-xl border-b-2 border-gray-200 w-96"
-                          defaultValue={value}
-                          name={key}
-                          type={!typeMap[key] ? "text" : typeMap[key]}
-                          readOnly={!isEdit}
-                        />
-                        {isEdit && key !== "email" && (
-                          <button
-                            type="button"
-                            className="text-red-500"
-                            onClick={() => {
-                              const nextAttrs = attrs;
-                              delete nextAttrs[key];
-
-                              setAttrs({ ...nextAttrs });
-                            }}
-                          >
-                            <svg
-                              width={24}
-                              height={24}
-                              className="inline"
-                              xmlns="http://www.w3.org/2000/svg"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                              />
-                            </svg>
-                          </button>
-                        )}
-                      </span>
-                    </div>
-                  );
-                })}
+              {entriesArr(attrs).map(([key, value]) => {
+                return (
+                  <div key={key} className="space-y-2">
+                    <label className="block text-xs text-gray-400 uppercase">
+                      {key.split("_").join(" ")}
+                    </label>
+                    <span className="space-x-2">
+                      <input
+                        className="text-xl border-b-2 border-gray-200 w-96"
+                        defaultValue={value}
+                        name={key}
+                        type={!typeMap[key] ? "text" : typeMap[key]}
+                        readOnly={!isEdit}
+                      />
+                      {isEdit && key !== "email" && (
+                        <button
+                          type="button"
+                          className="text-red-500"
+                          onClick={handleDeleteAttr(key)}
+                        >
+                          <TrashCan />
+                        </button>
+                      )}
+                    </span>
+                  </div>
+                );
+              })}
             </form>
           </div>
 
           {isEdit && (
             <div className="space-y-2">
               <h2 className="text-2xl">Add Details</h2>
-              <form
-                className="space-y-10"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  const form = e.target as HTMLFormElement;
-                  const data = new FormData(form);
-
-                  const key = data
-                    .get("key")
-                    .toString()
-                    .toLocaleLowerCase()
-                    .split(" ")
-                    .join("_");
-                  const value = data.get("value").toString();
-
-                  const nextAttrs = {
-                    ...attrs,
-                    [key]: value,
-                  };
-
-                  setAttrs(nextAttrs);
-
-                  form.reset();
-                }}
-              >
+              <form className="space-y-10" onSubmit={handleAddAttr}>
                 <div className="space-y-2">
-                  <label className="uppercase text-xs text-gray-400 block">
+                  <label className="block text-xs text-gray-400 uppercase">
                     Key
                   </label>
                   <input
@@ -213,7 +182,7 @@ export default function customer(props: Props) {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="uppercase text-xs text-gray-400 block">
+                  <label className="block text-xs text-gray-400 uppercase">
                     Value
                   </label>
                   <input
@@ -223,10 +192,7 @@ export default function customer(props: Props) {
                   />
                 </div>
 
-                <button
-                  type="submit"
-                  className="border-2 border-blue-500 py-2 px-6 rounded text-blue-500"
-                >
+                <button type="submit" className="py-2 text-blue-500 ">
                   Add
                 </button>
               </form>
@@ -235,12 +201,20 @@ export default function customer(props: Props) {
         </div>
 
         {isEdit && (
-          <button
-            form="save-changes"
-            className="bg-blue-500 py-2 px-6 rounded text-white"
-          >
-            Save Changes
-          </button>
+          <div className="space-x-6">
+            <button
+              className="px-6 py-2 text-blue-500 border-2 border-blue-500 rounded"
+              onClick={pushToHomePage}
+            >
+              Discard Changes
+            </button>
+            <button
+              form="save-changes"
+              className="px-6 py-2 text-white bg-blue-500 border-2 border-blue-500 rounded"
+            >
+              Save Changes
+            </button>
+          </div>
         )}
       </div>
     </Layout>
@@ -249,6 +223,7 @@ export default function customer(props: Props) {
 
 export async function getServerSideProps(context) {
   const { id } = context.query;
+  // Should handle the error
   const data = await fetch(`http://localhost:3000/api/customer/${id}`);
   const customer = await data.json();
 
